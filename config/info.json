@@ -1,0 +1,44 @@
+{
+  "app": {
+    "name": "Sundorjo AI",
+    "description": {
+      "short": "Your personal AI skin care assistant for instant diagnosis and treatment suggestions.",
+      "meta": "Sundorjo AI offers intelligent skin analysis and treatment suggestions. Upload an image or describe your skin concern to get instant, personalized dermatologist-grade advice.",
+      "og": "Sundorjo AI is your personal AI dermatologist. Get instant skin analysis and personalized treatment plans using advanced AI technology."
+    },
+    "branding": {
+      "logo": {
+        "svg": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg",
+        "png": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg",
+        "favicon": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg"
+      },
+      "thumbnail": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832363/uzfegze1u5qr4rmfalxn.jpg"
+    }
+  },
+  "pricing": [
+    {
+      "plan": "Community",
+      "price": 0,
+      "currency": "USD",
+      "billing": "monthly",
+      "features": [
+        "Access to basic Research Hub data",
+        "Community-led social innovation support",
+        "Standard response for youth queries",
+        "Open-source project collaboration"
+      ]
+    },
+    {
+      "plan": "Innovation Pro",
+      "price": 9.99,
+      "currency": "USD",
+      "billing": "monthly",
+      "features": [
+        "Priority MedSentry API access",
+        "Real-time environmental monitoring tools",
+        "Mentorship from WYSII Silver Medalists",
+        "Early access to Research & Innovation Hub prototypes"
+      ]
+    }
+  ]
+}
