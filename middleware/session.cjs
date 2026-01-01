@@ -11,11 +11,14 @@ const setupSession = (app) => {
             ttl: 14 * 24 * 60 * 60
         }),
         cookie: {
-            secure: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV === 'production' && !process.env.DISABLE_SECURE_COOKIES, // Set DISABLE_SECURE_COOKIES=true for platforms that handle HTTPS termination
             httpOnly: true,
             maxAge: 14 * 24 * 60 * 60 * 1000,
-            sameSite: 'lax'
-        }
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 'none' allows cross-site cookies in production if secure is true
+        },
+        // Debug logging for session
+        proxy: true // Trust first proxy for platforms like Render, Heroku, etc.
+
     }));
 
 

@@ -110,7 +110,11 @@ export const SyntexService = {
             }
         } catch (error) {
             console.error("Get all chats error:", error);
-            const axiosError = error as { response?: { data?: { error?: string } } };
+            const axiosError = error as { response?: { data?: { error?: string }; status?: number } };
+            // Check if it's an authentication error specifically
+            if (axiosError.response?.status === 401) {
+                throw new Error('Authentication required - please log in again');
+            }
             throw new Error(axiosError.response?.data?.error || (error as Error).message || "Failed to fetch chats");
         }
     },

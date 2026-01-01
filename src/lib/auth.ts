@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Ensure this matches your backend URL from the .env
-// Use relative path in production (empty string) to avoid CORS issues as frontend is served by backend
+
 const API_URL = import.meta.env.PROD ? "" : "http://localhost:3000";
+
+
 
 // Axios instance with credentials (cookies) enabled
 const api = axios.create({
