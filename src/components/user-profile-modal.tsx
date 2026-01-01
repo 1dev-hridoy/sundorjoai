@@ -1,4 +1,4 @@
-import { MailIcon, CalendarIcon, SettingsIcon, BellIcon, ShieldIcon, LogOutIcon, UserIcon, CameraIcon } from "lucide-react";
+import { MailIcon, CalendarIcon, SettingsIcon, BellIcon, ShieldIcon, LogOutIcon, CameraIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -20,14 +20,14 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     const [loadingStats, setLoadingStats] = useState(true);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isNameModalOpen, setIsNameModalOpen] = useState(false);
-    
+
     // Format the join date from user's creation date if available
     const formatDate = (dateString?: string) => {
         if (!dateString) return "Unknown";
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            year: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric'
         });
     };
 
@@ -91,9 +91,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     <div className="relative inline-block mx-auto mb-4">
                         <div className="rounded-full bg-linear-to-br from-purple-100 to-indigo-100 p-1">
                             <Avatar className="h-20 w-20 border-4 border-white shadow-sm">
-                                <AvatarImage 
-                                    src={`https://api.dicebear.com/6.x/${user?.avatarStyle || 'micah'}/svg?seed=${user?.username || user?.email || 'user'}`} 
-                                    alt={user?.username || user?.email || "User"} 
+                                <AvatarImage
+                                    src={`https://api.dicebear.com/6.x/${user?.avatarStyle || 'micah'}/svg?seed=${user?.username || user?.email || 'user'}`}
+                                    alt={user?.username || user?.email || "User"}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-2xl font-bold">
                                     {user?.username ? user.username.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "U"}
@@ -155,16 +155,16 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                         <div>
                             <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Preferences</h4>
                             <div className="space-y-1">
-                                <Button 
-                                    variant="ghost" 
+                                <Button
+                                    variant="ghost"
                                     className="w-full justify-start gap-3 px-2 h-9 font-medium text-gray-600 hover:text-gray-900"
                                     onClick={() => setIsAvatarModalOpen(true)}
                                 >
                                     <CameraIcon className="size-4 text-gray-400" />
                                     Change Avatar
                                 </Button>
-                                <Button 
-                                    variant="ghost" 
+                                <Button
+                                    variant="ghost"
                                     className="w-full justify-start gap-3 px-2 h-9 font-medium text-gray-600 hover:text-gray-900"
                                     onClick={() => {
                                         onClose(); // Close the profile modal first
@@ -188,8 +188,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 </ScrollArea>
 
                 <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="w-full gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-100 border-gray-200"
                         onClick={handleLogout}
                     >
@@ -198,13 +198,13 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     </Button>
                 </div>
             </DialogContent>
-            
+
             {/* Avatar Selection Modal */}
             <AvatarSelectionModal
                 isOpen={isAvatarModalOpen}
                 onClose={() => setIsAvatarModalOpen(false)}
             />
-            
+
             {/* Name Change Modal */}
             <UserNameModal
                 isOpen={isNameModalOpen}

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ensure this matches your backend URL from the .env
-const API_URL = "http://localhost:3000";
+const API_URL = "https://sundorjo-ai.onrender.com";
 
 // Axios instance with credentials (cookies) enabled
 const api = axios.create({

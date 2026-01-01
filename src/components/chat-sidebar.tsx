@@ -9,7 +9,7 @@ import {
     LogOutIcon,
     MessageSquareIcon,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import ConfirmationModal from "./confirmation-modal";

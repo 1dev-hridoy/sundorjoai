@@ -3,7 +3,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogContentNoClose, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { toast } from "sonner";
-import { AuthService } from "../lib/auth";
 
 interface UserNameModalProps {
     isOpen: boolean;
@@ -59,7 +58,7 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                             Enter your preferred name for your profile.
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -75,10 +74,10 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                                 className="h-11"
                             />
                         </div>
-                        
+
                         <div className="flex flex-col gap-2">
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                                 disabled={isLoading || !name.trim()}
                             >
@@ -86,7 +85,7 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                             </Button>
                         </div>
                     </form>
-                    
+
                     <p className="text-xs text-gray-500 text-center mt-2">
                         Your name will be used to personalize your experience.
                     </p>
@@ -99,7 +98,7 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                             Please enter your name to continue. This helps us personalize your experience.
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -115,10 +114,10 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                                 className="h-11"
                             />
                         </div>
-                        
+
                         <div className="flex flex-col gap-2">
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                                 disabled={isLoading || !name.trim()}
                             >
@@ -126,7 +125,7 @@ export default function UserNameModal({ isOpen, onClose, onNameSet, isClosable =
                             </Button>
                         </div>
                     </form>
-                    
+
                     <p className="text-xs text-gray-500 text-center mt-2">
                         Your name will be used to personalize your experience.
                     </p>

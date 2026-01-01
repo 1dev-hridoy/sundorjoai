@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { AuthService } from "../lib/auth";
 import { useAuth } from "../context/AuthContext";
 import { SyntexService } from "../lib/syntex";
 import type { AppInfo } from "../lib/syntex";

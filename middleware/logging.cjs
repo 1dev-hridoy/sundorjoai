@@ -1,5 +1,4 @@
 const winston = require('winston');
-const DailyRotateFile = require('winston-daily-rotate-file');
 
 // Create logger instance
 const logger = winston.createLogger({
@@ -10,12 +9,6 @@ const logger = winston.createLogger({
         winston.format.json()
     ),
     transports: [
-        new DailyRotateFile({
-            filename: 'logs/application-%DATE%.log',
-            datePattern: 'YYYY-MM-DD',
-            maxSize: '20m',
-            maxFiles: '14d'
-        }),
         new winston.transports.Console({
             format: winston.format.simple()
         })
@@ -25,7 +18,7 @@ const logger = winston.createLogger({
 // Request logging middleware
 const requestLogger = (req, res, next) => {
     const start = Date.now();
-    
+
     res.on('finish', () => {
         const duration = Date.now() - start;
         logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`, {
@@ -37,7 +30,7 @@ const requestLogger = (req, res, next) => {
             userAgent: req.get('User-Agent')
         });
     });
-    
+
     next();
 };
 

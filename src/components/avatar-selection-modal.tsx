@@ -3,16 +3,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
-import { SyntexService } from "../lib/syntex";
 import { useState } from "react";
 
 // DiceBear avatar styles
 const AVATAR_STYLES = [
-    'adventurer', 'adventurer-neutral', 'avataaars', 'avataaars-neutral', 
-    'big-ears', 'big-ears-neutral', 'big-smile', 'bottts', 'bottts-neutral', 
-    'croodles', 'croodles-neutral', 'dicebear', 'emoji', 'female', 'gridy', 
-    'human', 'identicon', 'initials', 'male', 'micah', 'miniavs', 
-    'open-peeps', 'personas', 'pixel-art', 'pixel-art-neutral', 'shapes', 
+    'adventurer', 'adventurer-neutral', 'avataaars', 'avataaars-neutral',
+    'big-ears', 'big-ears-neutral', 'big-smile', 'bottts', 'bottts-neutral',
+    'croodles', 'croodles-neutral', 'dicebear', 'emoji', 'female', 'gridy',
+    'human', 'identicon', 'initials', 'male', 'micah', 'miniavs',
+    'open-peeps', 'personas', 'pixel-art', 'pixel-art-neutral', 'shapes',
     'thumbs'
 ];
 
@@ -32,7 +31,7 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
 
     const handleSaveAvatar = async () => {
         if (!user) return;
-        
+
         setIsUpdating(true);
         try {
             await updateProfile({ avatarStyle: selectedAvatarStyle });
@@ -60,32 +59,32 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
                         Choose your preferred avatar style
                     </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-4">
                     <div className="flex justify-center">
                         <Avatar className="h-20 w-20">
-                            <AvatarImage 
-                                src={`https://api.dicebear.com/6.x/${selectedAvatarStyle}/svg?seed=${user?.username || user?.email || 'user'}`} 
-                                alt="Selected avatar" 
+                            <AvatarImage
+                                src={`https://api.dicebear.com/6.x/${selectedAvatarStyle}/svg?seed=${user?.username || user?.email || 'user'}`}
+                                alt="Selected avatar"
                             />
                             <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-2xl font-bold">
                                 {user?.username ? user.username.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "U"}
                             </AvatarFallback>
                         </Avatar>
                     </div>
-                    
+
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Select Avatar Style</h4>
                     <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
                         {AVATAR_STYLES.map((style) => (
-                            <div 
+                            <div
                                 key={style}
                                 className={`flex flex-col items-center cursor-pointer p-1 rounded ${selectedAvatarStyle === style ? 'bg-purple-100 border border-purple-300' : 'hover:bg-gray-100'}`}
                                 onClick={() => handleAvatarStyleChange(style)}
                             >
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage 
-                                        src={`https://api.dicebear.com/6.x/${style}/svg?seed=${user?.username || user?.email || 'user'}`} 
-                                        alt={style} 
+                                    <AvatarImage
+                                        src={`https://api.dicebear.com/6.x/${style}/svg?seed=${user?.username || user?.email || 'user'}`}
+                                        alt={style}
                                     />
                                     <AvatarFallback className="text-xs">
                                         {style.charAt(0).toUpperCase()}
@@ -96,18 +95,18 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
                         ))}
                     </div>
                 </div>
-                
+
                 <div className="flex gap-2 pt-4">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="flex-1"
                         onClick={handleCancel}
                         disabled={isUpdating}
                     >
                         Cancel
                     </Button>
-                    <Button 
-                        variant="default" 
+                    <Button
+                        variant="default"
                         className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                         onClick={handleSaveAvatar}
                         disabled={isUpdating}

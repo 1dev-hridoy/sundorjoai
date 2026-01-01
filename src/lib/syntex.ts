@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:3000";
+const API_URL = "https://sundorjo-ai.onrender.com";
 
 const api = axios.create({
     baseURL: API_URL,
@@ -61,32 +61,10 @@ export interface AppInfo {
 }
 
 export const SyntexService = {
-    // We don't need a separate uploadImage method for the backend if the backend handles it in the chat endpoint.
-    // However, the current React UI uploads *before* sending the message to show a preview URL.
-    // Looking at the node backend: `handleChatRequest` (POST /api/chat/:id) accepts `text` and `file`.
-    // It uploads to Cloudinary internally.
-    //
-    // Problem: React UI expects an image URL back *immediately* after upload to display it in the chat bubble.
-    // Solution: We can create a temporary preview locally (URL.createObjectURL) for display,
-    // and send the FILE to the backend when "sending" the message.
-    //
-    // But `ChatArea` handles upload separate from send? 
-    // Wait, in `chat.tsx`, `handleSendMessage` accepts a `File`.
-    // It currently calls `SyntexService.uploadImage(file)` then `generateResponse`.
-    // ADJUSTMENT: We will update `chat.tsx` to NOT upload separately, but send `file` to `generateResponse`.
-    // But for now, let's keep the signature similar or adapt.
 
-    // Actually, looking at the previous step's `chat.tsx`, it calls `uploadImage` first.
-    // If we want to use the backend's Cloudinary logic, we should use the backend.
-    // Does the backend have a standalone /upload endpoint?
-    // The reference code didn't show one in `api.js` or `chatController.js`. It seemed to be part of the chat flow.
-    //
-    // HACK: For the "upload" step in the UI, we can just return the local ObjectURL, 
-    // and pass the `File` object to `generateResponse`.
-    // `generateResponse` will then send `multipart/form-data` to the backend.
 
     uploadImage: async (file: File): Promise<string> => {
-        // Return a local preview URL immediately. The actual upload happens in generateResponse.
+
         return URL.createObjectURL(file);
     },
 
@@ -96,9 +74,7 @@ export const SyntexService = {
         if (file) formData.append('image', file);
 
         try {
-            // The backend endpoint is likely /api/chat/:chatId or /chat/api/:chatId
-            // Based on index.js analysis: app.use('/', chatRoutes) 
-            // and usually router.post('/api/chat/:chatId', ...)
+
             const endpoint = `/api/chat/${sessionId}`;
 
             const response = await api.post(endpoint, formData, {
