@@ -196,9 +196,18 @@ export default function Chat() {
                 }
             } catch (error) {
                 console.error("Failed to load chat sessions:", error);
-                if (!initialPrompt) {
+                // Check if it's a rate limiting error to prevent infinite loops
+                const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
+                const isRateLimitError = axiosError.response?.status === 429 || 
+                    (axiosError.response?.data?.error && axiosError.response.data.error.includes('Too many requests'));
+                
+                if (!initialPrompt && !isRateLimitError) {
                     const newId = await handleNewChat(false);
                     navigate(`/chat/${newId}`, { replace: true });
+                } else if (isRateLimitError) {
+                    console.warn("Rate limit hit when loading chat sessions, not creating new chat automatically");
+                    // Show a user-friendly message
+                    toast.error("Server is busy. Please try again in a moment.");
                 }
             }
         };

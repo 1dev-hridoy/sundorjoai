@@ -41,11 +41,13 @@ const setupSecurity = (app) => {
         optionsSuccessStatus: 200
     }));
 
-    // Rate limiting
+    // Rate limiting - More permissive limits to avoid issues for new users
     const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 100,
-        message: 'Too many requests from this IP, please try again later.'
+        windowMs: 15 * 60 * 1000, 
+        max: process.env.NODE_ENV === 'production' ? 1000 : 100, 
+        message: 'Too many requests from this IP, please try again later.',
+        standardHeaders: true, 
+        legacyHeaders: false, 
     });
     app.use(limiter);
 };

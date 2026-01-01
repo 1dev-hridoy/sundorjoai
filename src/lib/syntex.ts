@@ -130,7 +130,14 @@ export const SyntexService = {
             }
         } catch (error) {
             console.error("Get chat messages error:", error);
-            const axiosError = error as { response?: { data?: { error?: string } } };
+            const axiosError = error as { response?: { data?: { error?: string }; status?: number } };
+            // Check if it's an authentication error or rate limiting error
+            if (axiosError.response?.status === 401) {
+                throw new Error('Authentication required - please log in again');
+            }
+            if (axiosError.response?.status === 429) {
+                throw new Error('Rate limit exceeded - please try again later');
+            }
             throw new Error(axiosError.response?.data?.error || (error as Error).message || "Failed to fetch messages");
         }
     },
