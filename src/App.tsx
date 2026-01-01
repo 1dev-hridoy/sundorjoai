@@ -5,6 +5,8 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Chat from "./pages/chat";
 import Signup from "./pages/signup";
+import NotFound from "./pages/NotFound";
+import ServerError from "./pages/ServerError";
 import { AuthProvider } from "./context/AuthContext";
 
 export default function App() {
@@ -19,6 +21,13 @@ export default function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/chat/:chatId" element={<Chat />} />
+                
+                {/* Error routes */}
+                <Route path="/404" element={<NotFound />} />
+                <Route path="/500" element={<ServerError />} />
+                
+                {/* Catch-all route for 404 */}
+                <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster position="top-center" richColors />
         </AuthProvider>
