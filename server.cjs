@@ -40,8 +40,8 @@ app.use('/api', userRoutes); // Mount user routes under /api
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'dist')));
 
-    // Catch-all handler to serve React app
-    app.get('*', (req, res) => {
+
+    app.get(/(.*)/, (req, res) => {
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
 } else {
