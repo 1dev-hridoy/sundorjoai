@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = "https://sundorjo-ai.onrender.com";
+// Use relative path in production (empty string) to avoid CORS issues as frontend is served by backend
+const API_URL = import.meta.env.PROD ? "" : "http://localhost:3000";
 
 const api = axios.create({
     baseURL: API_URL,

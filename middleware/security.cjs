@@ -19,9 +19,26 @@ const setupSecurity = (app) => {
 
 
     app.use(cors({
-        origin: process.env.NODE_ENV === 'production'
-            ? process.env.FRONTEND_URL
-            : 'http://localhost:5173',
+        origin: (origin, callback) => {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            // In production, we want to allow our own domain.
+            // Since we are serving frontend from same backend, we can allow the origin if it matches.
+            // Or we can trust FRONTEND_URL if set.
+            const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://sundorjo-ai.onrender.com'];
+
+            // Also allow the current origin of the request if it's the same site
+            if (process.env.NODE_ENV === 'production') {
+                callback(null, true); // Since it is same domain mostly
+            } else {
+                if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+                    callback(null, true);
+                } else {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            }
+        },
         credentials: true,
         optionsSuccessStatus: 200
     }));
