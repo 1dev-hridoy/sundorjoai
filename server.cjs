@@ -32,7 +32,7 @@ setupSession(app);
 app.use(requestLogger);
 
 // Register API routes first to avoid conflicts with catch-all
-app.use('/api/users', userRoutes); // Mount user routes under /api/users
+app.use('/api', userRoutes); // Mount user routes under /api
 app.use('/', chatRoutes); // Mount chat API routes (already prefixed with /api)
 app.use('/auth', authRoutes);
 app.use('/', indexRoutes);
