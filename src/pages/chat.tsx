@@ -40,7 +40,6 @@ export default function Chat() {
     const isLoading = !isUserLoaded;
     const needsName = user && !user.firstName && !user.lastName; 
     
-   
 
     
     const [initialPromptProcessed, setInitialPromptProcessed] = useState(false);
@@ -51,7 +50,6 @@ export default function Chat() {
 
 
     
-
     const handleNewChat = async (shouldNavigate = true): Promise<string> => {
 
         const newSessionId = generateId();
@@ -157,8 +155,6 @@ export default function Chat() {
 
     
             
-
-
             if (!sessions.some(s => s.id === targetSessionId)) {
                 const newSession: ChatSession = {
                     id: targetSessionId,
@@ -181,7 +177,6 @@ export default function Chat() {
         if (!isLoading && !user) {
      
             
-
         }
     }, [isLoading, user]);
 
@@ -213,7 +208,7 @@ export default function Chat() {
                 } else if (!initialPrompt && chatSessions.length === 0) {
       
                     
-
+                    
 
 
                     const newId = await handleNewChat(false);
@@ -238,7 +233,7 @@ export default function Chat() {
         };
 
         loadChatSessions();
-    }, [user, chatId, initialPrompt, navigate]); 
+    }, [user, chatId, initialPrompt, navigate]);
 
 
     useEffect(() => {
@@ -464,7 +459,7 @@ export default function Chat() {
     };
 
     // Handle name set from modal - now using Clerk's user update
-    const handleNameSet = (name: string) => {
+    const handleNameSet = () => {
         // Clerk handles user updates automatically, no need for custom setUserName
         setIsNameModalOpen(false);
     };

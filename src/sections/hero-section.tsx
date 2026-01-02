@@ -18,7 +18,7 @@ export default function HeroSection() {
 
     // Auth & Navigation
     const navigate = useNavigate();
-    const { user, isSignedIn } = useUser();
+    const { isSignedIn } = useUser();
 
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -146,7 +146,6 @@ export default function HeroSection() {
                         }}
                         required
                     />
-
                     <div className="flex items-center justify-between px-4 pb-4 md:px-6 md:pb-6 pt-0">
                         <div className="text-xs text-gray-400 font-medium hidden sm:block">
                             Press <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px]">Enter</kbd> to generate

@@ -75,14 +75,14 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             setStats(null);
             setLoadingStats(true);
         }
-    }, [isOpen, isSignedIn, avatarUpdateTrigger]); 
+    }, [isOpen, isSignedIn]); 
 
     // Update selected avatar style when user changes
     useEffect(() => {
         if (user) {
          
         }
-    }, [user, avatarUpdateTrigger]); 
+    }, [user]); 
 
     if (!isSignedIn) {
         return null; 
