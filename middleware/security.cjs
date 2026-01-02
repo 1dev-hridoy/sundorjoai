@@ -6,6 +6,7 @@ const setupSecurity = (app) => {
 
     app.use(helmet({
         contentSecurityPolicy: {
+            useDefaults: false,
             directives: {
                 defaultSrc: ["'self'"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://*.clerk.dev", "https://*.clerk.accounts.dev", "https://clerk.sundorjoai.scriptysphere.com"],
