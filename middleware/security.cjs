@@ -10,9 +10,10 @@ const setupSecurity = (app) => {
                 defaultSrc: ["'self'"],
                 styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
                 fontSrc: ["'self'", "https://fonts.gstatic.com", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
-                imgSrc: ["'self'", "data:", "https:", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
+                imgSrc: ["'self'", "data:", "https:", "https://*.clerk.dev", "https://*.clerk.accounts.dev", "https://clerk-telemetry.com"],
                 scriptSrc: ["'self'", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
-                connectSrc: ["'self'", "https://syntexcore.site", "https://syntexcore.onrender.com", "https://*.clerk.dev", "https://*.clerk.accounts.dev", "wss://*.clerk.dev", "wss://*.clerk.accounts.dev"],
+                workerSrc: ["'self'", "blob:", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
+                connectSrc: ["'self'", "https://syntexcore.site", "https://syntexcore.onrender.com", "https://*.clerk.dev", "https://*.clerk.accounts.dev", "wss://*.clerk.dev", "wss://*.clerk.accounts.dev", "https://clerk-telemetry.com"],
                 frameSrc: ["'self'", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
                 mediaSrc: ["'self'", "https://*.clerk.dev", "https://*.clerk.accounts.dev"],
                 objectSrc: ["'none'"], // Prevents loading of plugins like Flash
