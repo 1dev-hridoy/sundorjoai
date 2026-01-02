@@ -19,7 +19,6 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     const [stats, setStats] = useState<{ totalChats: number; timeSaved: string } | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
     const [isNameModalOpen, setIsNameModalOpen] = useState(false);
-    const [avatarUpdateTrigger, setAvatarUpdateTrigger] = useState(0);
 
     // Format the join date from user's creation date if available
     const formatDate = (dateString?: string) => {
