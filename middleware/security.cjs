@@ -3,6 +3,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const setupSecurity = (app) => {
+    // Updated CSP for Clerk custom domain - Jan 2026
 
     app.use(helmet({
         contentSecurityPolicy: {
