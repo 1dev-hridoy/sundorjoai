@@ -5,12 +5,12 @@ const connectDB = require('./config/database.cjs');
 const setupSecurity = require('./middleware/security.cjs');
 const setupSession = require('./middleware/session.cjs');
 const requestLogger = require('./middleware/logging.cjs');
-const { requireAuth } = require('./middleware/auth.cjs');
+const { clerkMiddleware } = require('@clerk/express');
 
 const indexRoutes = require('./routes/index.cjs');
-const authRoutes = require('./routes/auth.cjs');
-const chatRoutes = require('./routes/chat.cjs'); // This contains API routes only
+const chatRoutes = require('./routes/chat.cjs'); 
 const userRoutes = require('./routes/user.cjs');
+const contactRoutes = require('./routes/contact.cjs');
 
 const app = express();
 
@@ -18,45 +18,64 @@ connectDB().catch(err => {
     console.error('Failed to initialize database connection:', err);
 });
 
-// Setup Security Middleware (Helmet, CSP, CORS, Rate Limit)
+
 setupSecurity(app);
 
-// Parse JSON and URL-encoded bodies
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Setup Session (and user locals)
-setupSession(app);
+
+
+app.use(clerkMiddleware({
+  secretKey: process.env.CLERK_SECRET_KEY,
+  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY || undefined,
+}));
 
 // Request logging
 app.use(requestLogger);
 
 // Register API routes first to avoid conflicts with catch-all
-app.use('/api', userRoutes); // Mount user routes under /api
-app.use('/', chatRoutes); // Mount chat API routes (already prefixed with /api)
-app.use('/auth', authRoutes);
+app.use('/api', userRoutes); 
+app.use('/', chatRoutes); 
 app.use('/', indexRoutes);
 
-// Special authenticated routes for React frontend - these must be registered before catch-all
-app.get('/chat', requireAuth, (req, res) => {
+
+app.use('/api/contact', contactRoutes);
+
+app.get('/chat', (req, res) => {
+  
+    const isAuthed = req.auth && req.auth.userId;
+    if (!isAuthed) {
+    
+        return res.redirect('/sign-in');
+    }
+    
     if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     } else {
-        // In development, let React Router handle it via Vite
+      
         res.json({ success: true, message: 'Chat page requested', redirect: '/chat' });
     }
 });
 
-app.get('/chat/:chatId', requireAuth, (req, res) => {
+app.get('/chat/:chatId', (req, res) => {
+   
+    const isAuthed = req.auth && req.auth.userId;
+    if (!isAuthed) {
+  
+        return res.redirect('/sign-in');
+    }
+    
     if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     } else {
-        // In development, let React Router handle it via Vite
+ 
         res.json({ success: true, message: 'Chat page with ID requested', chatId: req.params.chatId });
     }
 });
 
-// Error handling middleware
+
 app.use((err, req, res, next) => {
     console.error('Server Error:', err);
     
@@ -90,8 +109,8 @@ app.use((err, req, res, next) => {
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'dist')));
 
- 
     app.get(/.*/, (req, res) => {
+       
         
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });

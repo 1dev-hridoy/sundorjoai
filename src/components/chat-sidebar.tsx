@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "../context/AuthContext";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import ConfirmationModal from "./confirmation-modal";
 
 import { SyntexService } from "../lib/syntex";
@@ -51,7 +51,9 @@ export default function ChatSidebar({
     onClose: () => void;
 }) {
     const navigate = useNavigate();
-    const { user: currentUser, logout, isLoading } = useAuth();
+    const { user: currentUser, isSignedIn } = useUser();
+    const { signOut } = useAuth();
+    const [isLoading, setIsLoading] = React.useState(false);
 
     // State for confirmation modals
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
@@ -72,12 +74,15 @@ export default function ChatSidebar({
 
     const handleLogout = async () => {
         try {
-            await logout();
-            navigate("/login");
+            setIsLoading(true);
+            await signOut();
+            navigate("/");
             toast.success("Logged out successfully");
         } catch (error) {
             console.error("Logout error:", error);
             toast.error("Failed to logout");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -167,26 +172,26 @@ export default function ChatSidebar({
                                     <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
                                 </div>
                             </div>
-                        ) : currentUser ? (
+                        ) : isSignedIn && currentUser ? (
                             <div className="flex items-center space-x-3">
                                 <Avatar
                                     className="cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                                     onClick={onProfileClick}
                                 >
                                     <AvatarImage
-                                        src={`https://api.dicebear.com/6.x/${currentUser.avatarStyle || 'micah'}/svg?seed=${currentUser.username || currentUser.email}`}
-                                        alt={currentUser.email}
+                                        src={currentUser.imageUrl || `https://api.dicebear.com/6.x/${currentUser.unsafeMetadata?.avatarStyle || 'micah'}/svg?seed=${currentUser.firstName || currentUser.emailAddresses[0]?.emailAddress}`}
+                                        alt={currentUser.emailAddresses[0]?.emailAddress}
                                     />
                                     <AvatarFallback className="bg-blue-100 text-blue-800">
-                                        {currentUser.email.charAt(0).toUpperCase()}
+                                        {currentUser.emailAddresses[0]?.emailAddress?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">
-                                        {currentUser.username || currentUser.email.split('@')[0]}
+                                        {currentUser.firstName || currentUser.emailAddresses[0]?.emailAddress?.split('@')[0]}
                                     </p>
                                     <p className="text-xs text-gray-500 truncate">
-                                        {currentUser.email}
+                                        {currentUser.emailAddresses[0]?.emailAddress}
                                     </p>
                                 </div>
                                 <Tooltip>

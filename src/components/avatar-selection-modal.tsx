@@ -2,8 +2,9 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { toast } from "sonner";
-import { useAuth } from "../context/AuthContext";
+import { useUser } from "@clerk/clerk-react";
 import { useState } from "react";
+import { SyntexService } from "../lib/syntex";
 
 // DiceBear avatar styles
 const AVATAR_STYLES = [
@@ -17,12 +18,12 @@ const AVATAR_STYLES = [
 
 interface AvatarSelectionModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (updated?: boolean) => void; // Accept an optional parameter to indicate if avatar was updated
 }
 
 export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectionModalProps) {
-    const { user, updateProfile } = useAuth();
-    const [selectedAvatarStyle, setSelectedAvatarStyle] = useState(user?.avatarStyle || 'micah');
+    const { user, isSignedIn } = useUser();
+    const [selectedAvatarStyle, setSelectedAvatarStyle] = useState(user?.unsafeMetadata?.avatarStyle as string || 'micah');
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleAvatarStyleChange = (style: string) => {
@@ -30,13 +31,25 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
     };
 
     const handleSaveAvatar = async () => {
-        if (!user) return;
+        if (!user || !isSignedIn) return;
 
         setIsUpdating(true);
         try {
-            await updateProfile({ avatarStyle: selectedAvatarStyle });
+            // Update user's avatar style in Clerk's unsafe metadata
+            await user.update({
+                unsafeMetadata: {
+                    ...user.unsafeMetadata,
+                    avatarStyle: selectedAvatarStyle
+                }
+            });
+            
+            // Also update in the backend if needed
+            await SyntexService.updateUserProfile({ avatarStyle: selectedAvatarStyle });
+            
             toast.success("Avatar updated successfully!");
-            onClose();
+            
+            // Close the modal and indicate that the avatar was updated
+            onClose(true);
         } catch (error) {
             console.error("Failed to update avatar style:", error);
             toast.error("Failed to update avatar. Please try again.");
@@ -46,12 +59,16 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
     };
 
     const handleCancel = () => {
-        setSelectedAvatarStyle(user?.avatarStyle || 'micah');
-        onClose();
+        setSelectedAvatarStyle(user?.unsafeMetadata?.avatarStyle as string || 'micah');
+        onClose(false); // Indicate that the avatar was not updated
     };
 
+    if (!isSignedIn) {
+        return null;
+    }
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={() => onClose(false)}>
             <DialogContent className="sm:max-w-md border-0 bg-white shadow-2xl rounded-xl p-6">
                 <DialogHeader className="text-left">
                     <DialogTitle className="text-2xl font-bold text-gray-900">Select Avatar</DialogTitle>
@@ -64,11 +81,11 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
                     <div className="flex justify-center">
                         <Avatar className="h-20 w-20">
                             <AvatarImage
-                                src={`https://api.dicebear.com/6.x/${selectedAvatarStyle}/svg?seed=${user?.username || user?.email || 'user'}`}
+                                src={`https://api.dicebear.com/6.x/${selectedAvatarStyle}/svg?seed=${user?.firstName || user?.emailAddresses[0]?.emailAddress || 'user'}`}
                                 alt="Selected avatar"
                             />
                             <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-2xl font-bold">
-                                {user?.username ? user.username.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "U"}
+                                {user?.firstName ? user.firstName.charAt(0).toUpperCase() : user?.emailAddresses[0]?.emailAddress ? user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase() : "U"}
                             </AvatarFallback>
                         </Avatar>
                     </div>
@@ -83,7 +100,7 @@ export default function AvatarSelectionModal({ isOpen, onClose }: AvatarSelectio
                             >
                                 <Avatar className="h-10 w-10">
                                     <AvatarImage
-                                        src={`https://api.dicebear.com/6.x/${style}/svg?seed=${user?.username || user?.email || 'user'}`}
+                                        src={`https://api.dicebear.com/6.x/${style}/svg?seed=${user?.firstName || user?.emailAddresses[0]?.emailAddress || 'user'}`}
                                         alt={style}
                                     />
                                     <AvatarFallback className="text-xs">

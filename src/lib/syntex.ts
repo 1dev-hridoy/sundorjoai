@@ -5,8 +5,27 @@ const API_URL = import.meta.env.PROD ? "" : "http://localhost:3000";
 
 const api = axios.create({
     baseURL: API_URL,
-    withCredentials: true,
+    withCredentials: false, // We'll use Clerk's authentication instead of cookies
 });
+
+// Add Clerk authentication interceptor
+api.interceptors.request.use(
+    async (config) => {
+        // Get the session token from Clerk
+        try {
+            const token = await ((window as any).Clerk?.session?.getToken() || null);
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        } catch (error) {
+            console.error('Error getting Clerk token:', error);
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 export interface Message {
     role: 'user' | 'ai';
@@ -59,6 +78,7 @@ export interface AppInfo {
         branding: Branding;
     };
     pricing: PricingPlan[];
+    copyright?: string;
 }
 
 export const SyntexService = {
@@ -174,6 +194,22 @@ export const SyntexService = {
             console.error("Update user profile error:", error);
             const axiosError = error as { response?: { data?: { error?: string } } };
             throw new Error(axiosError.response?.data?.error || (error as Error).message || "Failed to update profile");
+        }
+    },
+
+    deleteChat: async (chatId: string): Promise<any> => {
+        try {
+            const response = await api.delete(`/api/chat/${chatId}`);
+
+            if (response.data && response.data.success) {
+                return response.data;
+            } else {
+                throw new Error(response.data.error || "Failed to delete chat");
+            }
+        } catch (error) {
+            console.error("Delete chat error:", error);
+            const axiosError = error as { response?: { data?: { error?: string } } };
+            throw new Error(axiosError.response?.data?.error || (error as Error).message || "Failed to delete chat");
         }
     },
 

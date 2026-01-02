@@ -2,7 +2,7 @@ import { SparklesIcon, TrendingUpIcon } from "lucide-react";
 import Marquee from "react-fast-marquee";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useUser } from "@clerk/clerk-react";
 
 interface Prompt {
     label: string;
@@ -18,7 +18,7 @@ export default function HeroSection() {
 
     // Auth & Navigation
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isSignedIn } = useUser();
 
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -26,9 +26,9 @@ export default function HeroSection() {
 
         if (!prompt.trim()) return;
 
-        if (!user) {
+        if (!isSignedIn) {
             // If not logged in, go to login
-            navigate("/login");
+            navigate("/sign-in");
             return;
         }
 
@@ -139,7 +139,7 @@ export default function HeroSection() {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
                                 if (prompt.trim()) {
-                                    if (!user) navigate("/login");
+                                    if (!isSignedIn) navigate("/sign-in");
                                     else navigate(`/chat?initialPrompt=${encodeURIComponent(prompt)}`);
                                 }
                             }

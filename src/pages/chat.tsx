@@ -8,7 +8,8 @@ import ChatArea from "../components/chat-area";
 import UserProfileModal from "../components/user-profile-modal";
 import UserNameModal from "../components/user-name-modal";
 import { SyntexService } from "../lib/syntex";
-import { useAuth } from "../context/AuthContext";
+import { useUser } from "@clerk/clerk-react";
+import { Skeleton } from "../components/ui/skeleton";
 
 // Simple ID generator
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -35,18 +36,24 @@ export default function Chat() {
     const [isTyping, setIsTyping] = useState(false);
 
     // Check authentication
-    const { user, isLoading, needsName, setUserName } = useAuth();
+    const { user, isLoaded: isUserLoaded } = useUser();
+    const isLoading = !isUserLoaded;
+    const needsName = user && !user.firstName && !user.lastName; 
+    
+   
 
-    // Track if we have already processed the initial prompt to avoid double-sending
+    
     const [initialPromptProcessed, setInitialPromptProcessed] = useState(false);
 
-    // Refs to track if certain operations have been performed to prevent infinite loops
+  
     const initialLoadRef = useRef(false);
     const sessionLoadRef = useRef(false);
 
-    // Define handleNewChat before the useEffect that uses it
+
+    
+
     const handleNewChat = async (shouldNavigate = true): Promise<string> => {
-        // Generate a new chat ID
+
         const newSessionId = generateId();
         const newSession: ChatSession = {
             id: newSessionId,
@@ -55,11 +62,11 @@ export default function Chat() {
             createdAt: new Date().toISOString()
         };
 
-        // Add to sessions
+      
         setSessions(prev => [newSession, ...prev]);
         setCurrentSessionId(newSessionId);
 
-        // Initialize messages for this chat
+     
         const initialMessages: Message[] = [{
             id: generateId(),
             role: 'ai',
@@ -79,12 +86,12 @@ export default function Chat() {
         return newSessionId;
     };
 
-    // Define handleSendMessage before the useEffect that uses it
+ 
     const handleSendMessage = async (content: string, file?: File, explicitSessionId?: string) => {
-        // Use explicit ID if provided (for initial prompt), otherwise current state
+
         const targetSessionId = explicitSessionId || currentSessionId;
 
-        // If we still don't have a session ID, we can't send
+      
         if (!targetSessionId) {
             console.warn("Attempted to send message without a session ID");
             return;
@@ -139,15 +146,28 @@ export default function Chat() {
                 [targetSessionId]: [...(prev[targetSessionId] || []), aiResponse]
             }));
 
-            // Update title if it's still "New Chat" (Checking prev sessions state here might be tricky if it's stale)
-            // Ideally we check the session from the callback or ref
-            setSessions(prev => prev.map(s => s.id === targetSessionId && s.title === "New Chat" ? {
-                ...s,
-                title: content.substring(0, 30),
-                date: new Date().toLocaleDateString()
-            } : s));
+            // Update title if it's still "New Chat" and we have content to use as title
+            if (sessions.some(s => s.id === targetSessionId && s.title === "New Chat") && content.trim()) {
+                setSessions(prev => prev.map(s => s.id === targetSessionId && s.title === "New Chat" ? {
+                    ...s,
+                    title: content.substring(0, 30) + (content.length > 30 ? '...' : ''),
+                    date: new Date().toLocaleDateString()
+                } : s));
+            }
+
+    
+            
 
 
+            if (!sessions.some(s => s.id === targetSessionId)) {
+                const newSession: ChatSession = {
+                    id: targetSessionId,
+                    title: content.substring(0, 30) + (content.length > 30 ? '...' : ''),
+                    date: new Date().toLocaleDateString(),
+                    createdAt: new Date().toISOString()
+                };
+                setSessions(prev => [newSession, ...prev]);
+            }
         } catch (error) {
             console.error("Failed to get response:", error);
             toast.error("Failed to get response");
@@ -156,12 +176,14 @@ export default function Chat() {
         }
     };
 
-    // Check authentication
+
     useEffect(() => {
         if (!isLoading && !user) {
-            navigate("/login");
+     
+            
+
         }
-    }, [isLoading, user, navigate]);
+    }, [isLoading, user]);
 
     // Sync URL param with internal state
     useEffect(() => {
@@ -170,7 +192,7 @@ export default function Chat() {
         }
     }, [chatId]);
 
-    // Load chat sessions from the backend when user is authenticated (only once)
+
     useEffect(() => {
         if (!user || sessionLoadRef.current) return;
         
@@ -178,25 +200,28 @@ export default function Chat() {
 
         const loadChatSessions = async () => {
             try {
-                // Fetch the user's chats from the backend
+         
                 const chatSessions = await SyntexService.getAllChats();
                 setSessions(chatSessions);
 
-                // Logic to set initial session based on URL or Data
+
                 if (chatId) {
                     setCurrentSessionId(chatId);
                 } else if (!initialPrompt && chatSessions.length > 0) {
                     // No ID in URL, no prompt -> Load first available
                     navigate(`/chat/${chatSessions[0].id}`, { replace: true });
                 } else if (!initialPrompt && chatSessions.length === 0) {
-                    // No sessions, start new
-                    // Wait for handleNewChat to return ID before navigating
+      
+                    
+
+
+
                     const newId = await handleNewChat(false);
                     navigate(`/chat/${newId}`, { replace: true });
                 }
             } catch (error) {
                 console.error("Failed to load chat sessions:", error);
-                // Check if it's a rate limiting error to prevent infinite loops
+               
                 const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
                 const isRateLimitError = axiosError.response?.status === 429 || 
                     (axiosError.response?.data?.error && axiosError.response.data.error.includes('Too many requests'));
@@ -213,20 +238,22 @@ export default function Chat() {
         };
 
         loadChatSessions();
-    }, [user, chatId, initialPrompt, navigate]); // Removed handleNewChat from dependencies to prevent infinite loop
+    }, [user, chatId, initialPrompt, navigate]); 
 
-    // Load messages for the current chat when chatId changes
+
     useEffect(() => {
         if (!user || !chatId) return;
 
         const loadChatMessages = async () => {
             try {
-                // Check if we already have messages for this chat in the map
+             
+                
                 if (!messagesMap[chatId]) {
-                    // Fetch messages for this specific chat from the backend
                     const chatMessages = await SyntexService.getChatMessages(chatId);
                     
-                    // Convert backend messages to our Message format if needed
+                 
+                    
+
                     const formattedMessages: Message[] = chatMessages.map((msg: { id?: string; role?: 'user' | 'ai'; content?: string; message?: string; timestamp?: string; imageUrl?: string }) => ({
                         id: msg.id || generateId(),
                         role: (msg.role === 'user' || msg.role === 'ai') ? msg.role : 'ai',
@@ -242,7 +269,7 @@ export default function Chat() {
                 }
             } catch (error) {
                 console.error(`Failed to load messages for chat ${chatId}:`, error);
-                // Initialize with empty array if loading fails
+            
                 setMessagesMap(prev => ({
                     ...prev,
                     [chatId]: []
@@ -253,7 +280,7 @@ export default function Chat() {
         loadChatMessages();
     }, [chatId, user, messagesMap]);
 
-    // Handle Initial Prompt (from Home Page) - only once
+
     useEffect(() => {
         if (initialPrompt && !initialPromptProcessed && user && !initialLoadRef.current) {
             initialLoadRef.current = true;
@@ -276,8 +303,10 @@ export default function Chat() {
 
     const handleDeleteChat = async (id: string) => {
         try {
-            // In a real implementation, we would delete the chat from the backend
-            // For now, just remove from local state
+            // Delete the chat from the backend
+            await SyntexService.deleteChat(id);
+            
+            // Remove from local state
             const updatedSessions = sessions.filter(session => session.id !== id);
             setSessions(updatedSessions);
 
@@ -346,18 +375,19 @@ export default function Chat() {
             // Call AI via Backend
             const aiResponseText = await SyntexService.generateResponse(
                 userMessage.content,
-                null, // For regeneration, we're not sending a new file
+                null, 
                 targetSessionId
             );
 
             const newAiResponse: Message = {
-                id: aiMessageId, // Reuse the same ID
+                id: aiMessageId,
                 role: "ai",
                 content: aiResponseText,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
-            // Replace the message in the array
+          
+            
             const finalMessages = [...updatedMessages];
             finalMessages[aiMessageIndex] = newAiResponse;
 
@@ -419,11 +449,11 @@ export default function Chat() {
             };
         });
 
-        // In a real implementation, this would send the rating to the backend
+        
         toast.success(`Message ${rating === 'like' ? 'liked' : 'disliked'}`);
     };
 
-    // Handle name modal close - prevent closing if user doesn't have a name
+
     const handleNameModalClose = () => {
         if (needsName) {
             // Don't close the modal if user still needs to set a name
@@ -433,13 +463,60 @@ export default function Chat() {
         setIsNameModalOpen(false);
     };
 
-    // Handle name set from modal
+    // Handle name set from modal - now using Clerk's user update
     const handleNameSet = (name: string) => {
-        setUserName(name);
+        // Clerk handles user updates automatically, no need for custom setUserName
         setIsNameModalOpen(false);
     };
 
     const currentMessages = currentSessionId ? (messagesMap[currentSessionId] || []) : [];
+
+    // Show skeleton loading when data is loading
+    if (isLoading || (!user && isUserLoaded)) {
+        return (
+            <div className="flex h-screen bg-white">
+                {/* Skeleton for sidebar */}
+                <div className="w-64 bg-gray-50 border-r border-gray-200 hidden md:flex flex-col">
+                    <div className="p-4 border-b border-gray-200">
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="p-4 space-y-3">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="mt-auto p-4">
+                        <Skeleton className="h-12 w-full rounded-full" />
+                    </div>
+                </div>
+                
+                {/* Skeleton for chat area */}
+                <div className="flex-1 flex flex-col">
+                    <div className="p-4 border-b border-gray-200">
+                        <Skeleton className="h-8 w-1/3" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <Skeleton className="h-20 w-3/4" />
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <Skeleton className="h-20 w-3/4" />
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                        </div>
+                        <div className="flex gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <Skeleton className="h-20 w-3/4" />
+                        </div>
+                    </div>
+                    <div className="p-4 border-t border-gray-200">
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-white">
@@ -460,9 +537,9 @@ export default function Chat() {
                 onOpenSidebar={() => setIsMobileSidebarOpen(true)}
                 onRegenerateMessage={handleRegenerateResponse}
                 onMessageRating={handleMessageRating}
-                userAvatarStyle={user?.avatarStyle}
-                userUsername={user?.username}
-                userEmail={user?.email}
+                userAvatarStyle={user?.imageUrl || undefined}
+                userUsername={user?.firstName || user?.username || undefined}
+                userEmail={user?.primaryEmailAddress?.emailAddress}
             />
             <UserProfileModal
                 isOpen={isProfileModalOpen}

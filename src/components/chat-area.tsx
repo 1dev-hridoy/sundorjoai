@@ -104,7 +104,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
             return;
         }
 
-        // Revoke previous preview URL if exists
+     
         if (previewFile) {
             URL.revokeObjectURL(previewFile.previewUrl);
         }
@@ -113,7 +113,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
         setPreviewFile({ file, previewUrl });
     }, [previewFile]);
 
-    // Handle drag and drop events
+  
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -134,7 +134,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
         }
     }, [handleFileSelect]);
 
-    // Handle file input change
+  
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             handleFileSelect(e.target.files[0]);
@@ -368,7 +368,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
                                         className="flex gap-4"
                                     >
                                         <Avatar className="h-8 w-8 border border-gray-100 shadow-sm">
-                                            <AvatarImage src="https://res.cloudinary.com/dastfgrsc/image/upload/v1767163624/image_qflpno.jpg" alt="AI" />
+                                            <AvatarImage src={appLogo} alt="AI" />
                                             <AvatarFallback><Sparkles className="size-4" /></AvatarFallback>
                                         </Avatar>
                                         <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1 shadow-sm">

@@ -3,3 +3,4 @@ build
 .env
 bin/
 logs/
+.env.local

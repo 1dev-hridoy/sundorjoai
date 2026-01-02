@@ -1,36 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth.cjs');
-const chatController = require('../controllers/chatController.cjs');
+const { createContact } = require('../controllers/contactController.cjs');
 
-// Protected chat route - redirect to new chat or load existing
-router.get('/chat', requireAuth, (req, res) => {
-    // For React Router to handle, serve the main HTML file
-    if (process.env.NODE_ENV === 'production') {
-        res.sendFile('index.html', { root: './dist' });
-    } else {
-        // In development, let Vite handle the routing
-        res.json({ 
-            success: true, 
-            message: 'Chat page requested - handled by React frontend',
-            redirect: '/chat'
-        });
-    }
-});
+router.use(express.static('public'));
 
-// Protected chat route with chatId
-router.get('/chat/:chatId', requireAuth, (req, res) => {
-    // For React Router to handle, serve the main HTML file
-    if (process.env.NODE_ENV === 'production') {
-        res.sendFile('index.html', { root: './dist' });
-    } else {
-        // In development, let Vite handle the routing
-        res.json({ 
-            success: true, 
-            message: 'Chat page with ID requested - handled by React frontend',
-            chatId: req.params.chatId
-        });
-    }
+router.post('/api/contact', createContact);
+
+
+router.get('*', (req, res) => {
+    res.sendFile('index.html', { root: 'public' });
 });
 
 module.exports = router;

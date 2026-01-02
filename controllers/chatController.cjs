@@ -15,7 +15,8 @@ exports.redirectChat = async (req, res) => {
 exports.renderChat = async (req, res) => {
     try {
         const { chatId } = req.params;
-        const userId = req.session.userId;
+       
+        const userId = req.auth.userId;
 
         // Find or create chat
         let chat = await Chat.findOne({ chatId, userId });
@@ -34,7 +35,7 @@ exports.renderChat = async (req, res) => {
             success: true,
             chatId: chat.chatId,
             messages: chat.messages,
-            user: res.locals.user
+            user: { id: userId } 
         });
     } catch (error) {
         console.error('Chat route error:', error);
@@ -49,7 +50,7 @@ exports.renderChat = async (req, res) => {
 exports.getMessages = async (req, res) => {
     try {
         const { chatId } = req.params;
-        const userId = req.session.userId;
+        const userId = req.auth.userId;
 
         const chat = await Chat.findOne({ chatId, userId });
         if (!chat) {
@@ -66,14 +67,7 @@ exports.getMessages = async (req, res) => {
 // New function to get all chat sessions for a user
 exports.getAllChats = async (req, res) => {
     try {
-        const userId = req.session.userId;
-
-        if (!userId) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'Authentication required' 
-            });
-        }
+        const userId = req.auth.userId;
 
         const chats = await Chat.find({ userId })
             .select('chatId title createdAt updatedAt')
@@ -99,9 +93,43 @@ exports.getAllChats = async (req, res) => {
     }
 };
 
+
+exports.deleteChat = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+    
+        
+
+
+        const userId = req.auth.userId;
+
+
+        const result = await Chat.findOneAndDelete({ chatId, userId });
+
+        if (!result) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Chat not found or you do not have permission to delete it' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Chat deleted successfully' 
+        });
+    } catch (error) {
+        console.error('Delete chat error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to delete chat' 
+        });
+    }
+};
+
 exports.handleChatRequest = async (req, res) => {
     let chatId = req.params.chatId;
-    let userId = req.session.userId;
+  
+    let userId = req.auth.userId;
     const userText = req.body.text || '';
     const imageFile = req.file;
 
@@ -109,7 +137,7 @@ exports.handleChatRequest = async (req, res) => {
     try {
         // Check authentication
         if (!userId) {
-            return res.status(401).json({ success: false, error: 'Not authenticated', redirect: '/auth/signin' });
+            return res.status(401).json({ success: false, error: 'Not authenticated', redirect: '/sign-in' });
         }
         console.log('--- DETAILED REQUEST LOG START ---');
         console.log('Time:', new Date().toISOString());
@@ -203,7 +231,6 @@ exports.handleChatRequest = async (req, res) => {
                 if (freshChat) {
                     const latestHistory = freshChat.getConversationHistory().slice(-16);
                     const newSummary = await generateContextSummary(latestHistory, freshChat.contextSummary);
-
                     if (newSummary !== freshChat.contextSummary) {
                         freshChat.contextSummary = newSummary;
                         await freshChat.save();
@@ -250,7 +277,6 @@ exports.handleChatRequest = async (req, res) => {
             statusCode = 429;
         } else if (error.response?.status === 400) {
             userMessage = 'The image format or message content could not be processed. Please try a different image.';
-            statusCode = 400;
         } else if (error.message.includes('All AI models failed')) {
             userMessage = 'Connection to intelligence models failed. Please try again.';
         }

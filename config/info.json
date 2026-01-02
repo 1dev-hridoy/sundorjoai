@@ -8,9 +8,9 @@
     },
     "branding": {
       "logo": {
-        "svg": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg",
-        "png": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg",
-        "favicon": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832534/xkfd60gfogwqh6napn9s.jpg"
+        "svg": "https://res.cloudinary.com/dastfgrsc/image/upload/v1767325798/sundorjo-ai_zjo3rz.svg",
+        "png": "https://res.cloudinary.com/dastfgrsc/image/upload/v1767325798/sundorjo-ai_j63ens.png",
+        "favicon": "https://res.cloudinary.com/dastfgrsc/image/upload/v1767325873/sundorjo-ai_axcnnl.jpg"
       },
       "thumbnail": "https://res.cloudinary.com/dx7iof0pk/image/upload/v1766832363/uzfegze1u5qr4rmfalxn.jpg"
     }
@@ -40,5 +40,16 @@
         "Early access to Research & Innovation Hub prototypes"
       ]
     }
-  ]
+  ],
+  "footer": {
+    "copyright": "© 2026 Sundorjo AI. A specialized innovation by ScriptySphere.",
+    "tagline": "Scripting a healthier future with AI precision.",
+    "socials": {
+      "facebook": "https://www.facebook.com/ScriptySphere",
+      "instagram": "https://instagram.com/scriptysphere",
+      "linkedin": "https://linkedin.com/company/scriptysphere",
+      "twitter": "https://twitter.com/scriptysphere"
+    },
+    "disclaimer": "Sundorjo AI provides suggestions based on smart algorithms and MedSentry research. Always consult a certified dermatologist for medical emergencies."
+  }
 }

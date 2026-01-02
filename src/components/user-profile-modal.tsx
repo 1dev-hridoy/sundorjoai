@@ -1,12 +1,11 @@
-import { MailIcon, CalendarIcon, SettingsIcon, BellIcon, ShieldIcon, LogOutIcon, CameraIcon } from "lucide-react";
+import { MailIcon, CalendarIcon, SettingsIcon, BellIcon, ShieldIcon, LogOutIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
-import { useAuth } from "../context/AuthContext";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { SyntexService } from "../lib/syntex";
 import { useEffect, useState } from "react";
-import AvatarSelectionModal from "./avatar-selection-modal";
 import UserNameModal from "./user-name-modal";
 
 interface UserProfileModalProps {
@@ -15,11 +14,12 @@ interface UserProfileModalProps {
 }
 
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-    const { user, logout, updateProfile } = useAuth();
+    const { user, isSignedIn } = useUser();
+    const { signOut } = useAuth();
     const [stats, setStats] = useState<{ totalChats: number; timeSaved: string } | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+    const [avatarUpdateTrigger, setAvatarUpdateTrigger] = useState(0);
 
     // Format the join date from user's creation date if available
     const formatDate = (dateString?: string) => {
@@ -33,8 +33,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
     const handleLogout = async () => {
         try {
-            await logout();
-            onClose(); // Close the modal after logout
+            await signOut();
+            onClose(); 
         } catch (error) {
             console.error("Logout error:", error);
         }
@@ -42,16 +42,19 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
     const handleNameSet = async (name: string) => {
         try {
-            await updateProfile({ username: name });
+            await user?.update({
+                firstName: name
+            });
+            
             setIsNameModalOpen(false);
         } catch (error) {
             console.error("Failed to update name:", error);
         }
     };
 
-    // Fetch user stats when modal opens
+
     useEffect(() => {
-        if (isOpen && user) {
+        if (isOpen && isSignedIn) {
             const fetchStats = async () => {
                 setLoadingStats(true);
                 try {
@@ -72,14 +75,18 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             setStats(null);
             setLoadingStats(true);
         }
-    }, [isOpen, user]);
+    }, [isOpen, isSignedIn, avatarUpdateTrigger]); 
 
     // Update selected avatar style when user changes
     useEffect(() => {
         if (user) {
-            // No need to set state here since we're using the avatar selection modal
+         
         }
-    }, [user]);
+    }, [user, avatarUpdateTrigger]); 
+
+    if (!isSignedIn) {
+        return null; 
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -92,11 +99,11 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                         <div className="rounded-full bg-linear-to-br from-purple-100 to-indigo-100 p-1">
                             <Avatar className="h-20 w-20 border-4 border-white shadow-sm">
                                 <AvatarImage
-                                    src={`https://api.dicebear.com/6.x/${user?.avatarStyle || 'micah'}/svg?seed=${user?.username || user?.email || 'user'}`}
-                                    alt={user?.username || user?.email || "User"}
+                                    src={user?.imageUrl || `https://api.dicebear.com/6.x/${user?.unsafeMetadata?.avatarStyle || 'micah'}/svg?seed=${user?.firstName || user?.emailAddresses[0]?.emailAddress || 'user'}`}
+                                    alt={user?.firstName || user?.emailAddresses[0]?.emailAddress || "User"}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-2xl font-bold">
-                                    {user?.username ? user.username.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "U"}
+                                    {user?.firstName ? user.firstName.charAt(0).toUpperCase() : user?.emailAddresses[0]?.emailAddress ? user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase() : "U"}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
@@ -104,12 +111,12 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     </div>
 
                     <h3 className="font-semibold text-gray-900 text-lg">
-                        {user?.username || user?.email?.split('@')[0] || "User"}
+                        {user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || "User"}
                     </h3>
                     <p className="text-gray-500 text-sm">Member</p>
 
                     <div className="mt-4 flex justify-center gap-2 pb-4">
-                        <span className="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold uppercase tracking-wide border border-purple-100">
+                        <span className="px-2.5 py-0.5 rounded-full bg-purple-500 text-purple-700 text-[10px] font-bold uppercase tracking-wide border border-purple-100">
                             Free Plan
                         </span>
                     </div>
@@ -123,11 +130,11 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
                                     <MailIcon className="size-4 text-gray-400" />
-                                    <span className="truncate">{user?.email || "No email"}</span>
+                                    <span className="truncate">{user?.emailAddresses[0]?.emailAddress || "No email"}</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
                                     <CalendarIcon className="size-4 text-gray-400" />
-                                    <span>Joined {formatDate(user?.createdAt)}</span>
+                                    <span>Joined {formatDate(user?.createdAt?.toString())}</span>
                                 </div>
                             </div>
                         </div>
@@ -158,17 +165,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start gap-3 px-2 h-9 font-medium text-gray-600 hover:text-gray-900"
-                                    onClick={() => setIsAvatarModalOpen(true)}
-                                >
-                                    <CameraIcon className="size-4 text-gray-400" />
-                                    Change Avatar
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start gap-3 px-2 h-9 font-medium text-gray-600 hover:text-gray-900"
                                     onClick={() => {
-                                        onClose(); // Close the profile modal first
-                                        setIsNameModalOpen(true); // Then open the name modal
+                                        onClose(); 
+                                        setIsNameModalOpen(true);
                                     }}
                                 >
                                     <SettingsIcon className="size-4 text-gray-400" />
@@ -198,12 +197,6 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                     </Button>
                 </div>
             </DialogContent>
-
-            {/* Avatar Selection Modal */}
-            <AvatarSelectionModal
-                isOpen={isAvatarModalOpen}
-                onClose={() => setIsAvatarModalOpen(false)}
-            />
 
             {/* Name Change Modal */}
             <UserNameModal
