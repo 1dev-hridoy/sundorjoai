@@ -5,10 +5,12 @@ const SYNTX_API_KEY = process.env.SYNTEX_CORE_KEY;
 
 const SYSTEM_PROMPT = `You are Sundorjo AI, a premier clinical-grade skin intelligence assistant. Your role is to analyze skin concerns with dermatological precision.
 
+When provided with an [IMAGE ANALYSIS RESULT], treat it as the primary identification of the skin concern. Combine this with the user's input/questions to provide a comprehensive response.
+
 Please follow this structured approach in formatted Markdown:
 
 ### 1. Problem Identification
-Analyze the user's input to clearly identify the potential skin concern, condition, or skin type issue. Be precise and direct.
+Clearly state the identified skin concern based on the image analysis and user input. Be precise and direct.
 
 ### 2. Step-by-Step Solution
 Provide a clear, actionable routine or set of steps to address the identified problem.
@@ -26,13 +28,13 @@ Suggest specific drugs, active ingredients, or products to use.
 async function processTextOnlyRequest(text, imageUrl = null, conversationHistory = [], onThinking = null, chatId = 'default-session', contextSummary = '') {
     try {
         if (onThinking) {
-            onThinking('Thinking...');
-            await new Promise(r => setTimeout(r, 500));
-            onThinking('Analyzing text input...');
-            await new Promise(r => setTimeout(r, 600));
-            onThinking('Searching clinical knowledge base...');
-            await new Promise(r => setTimeout(r, 700));
-            onThinking('Synthesizing dermatological advice...');
+            onThinking('Sundorjo AI is analyzing your concern with clinical precision...');
+            await new Promise(r => setTimeout(r, 800));
+            onThinking('Deep-scanning specialized dermatological knowledge bases...');
+            await new Promise(r => setTimeout(r, 900));
+            onThinking('Cross-referencing multiple medical data modules...');
+            await new Promise(r => setTimeout(r, 1000));
+            onThinking('Synthesizing expert-level dermatological advice...');
         }
 
         console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Processing text-only request...'));
@@ -52,7 +54,7 @@ ${contextSummary}
 Image URL: ${imageUrl}` : '';
 
         const fullPrompt = `${contextBlock}${imageContext}\n\n${historyText}User: ${text}`;
-        
+
         const endpoints = [
             {
                 name: 'Deepseek',
@@ -68,24 +70,60 @@ Image URL: ${imageUrl}` : '';
                 name: 'GPT OSS 120B',
                 url: 'https://syntexcore.onrender.com/api/v1/gpt-oss-120b',
                 data: { question: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Copilot',
+                url: 'https://syntexcore.site/api/v1/copilot',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Gemma 7B Lora',
+                url: 'https://syntexcore.site/api/v1/gemma-7b-lora',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Hermes 2 Pro',
+                url: 'https://syntexcore.site/api/v1/hermes-2-pro',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Llama 3.1 8B',
+                url: 'https://syntexcore.site/api/v1/llama-3.1-8b',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Llama 3.3 70B',
+                url: 'https://syntexcore.site/api/v1/llama-3.3-70b',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'Mistral 7B v0.1',
+                url: 'https://syntexcore.site/api/v1/mistral-7b-v0.1',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
+            },
+            {
+                name: 'QWQ 32B',
+                url: 'https://syntexcore.site/api/v1/qwq-32b',
+                data: { text: fullPrompt, apiKey: SYNTX_API_KEY }
             }
         ];
 
         const responses = [];
-        
+
         for (const ep of endpoints) {
             try {
+                if (onThinking) onThinking(`Sundorjo AI is evaluating insights from multiple expert sources...`);
                 console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(` Calling ${ep.name} API...`));
-                
+
                 const logData = { ...ep.data, apiKey: '[REDACTED]' };
                 console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(` Sending request to ${ep.name} API (Full URL):`));
                 console.log(chalk.gray('  - URL: ') + chalk.cyan(ep.url));
                 console.log(chalk.gray('  - Payload: ') + chalk.white(JSON.stringify(logData, null, 2)));
-                
+
                 const response = await axios.post(ep.url, ep.data, { timeout: 30000 });
-                
+
                 console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(` ${ep.name} API Raw Response:`));
-             
+
                 try {
                     console.log(chalk.gray('  - Data: ') + chalk.white(JSON.stringify(response.data, null, 2)));
                 } catch (e) {
@@ -93,20 +131,32 @@ Image URL: ${imageUrl}` : '';
                 }
 
                 let content = '';
-                if (ep.name === 'Deepseek' && response.data && response.data.data && response.data.data.data && response.data.data.data.data) {
-                    content = response.data.data.data.data.answer?.data?.response || response.data.data.data.data.response;
-                } else if (ep.name === 'Public AI' && response.data && response.data.data && response.data.data.data) {
-                    content = response.data.data.data.response;
-                } else if (ep.name === 'GPT OSS 120B' && response.data && response.data.data && response.data.data.data) {
-                    content = response.data.data.data.answer;
+                // Try different parsing routes based on known model structures
+                if (response.data && response.data.status === 'success') {
+                    if (response.data.data && response.data.data.data) {
+                        // New site models (Copilot, Gemma, etc.) or Public AI structure
+                        content = response.data.data.data.response || response.data.data.data.answer || response.data.data.data.data?.answer?.data?.response || response.data.data.data.data?.response;
+                    } else if (response.data.data) {
+                        // Potential fallback or simplified success structure
+                        content = response.data.data.response || response.data.data.answer;
+                    }
                 }
-                
-                if (content) {
-                    responses.push(`${ep.name} Output:\n${content}`);
+
+                // Specific legacy fallbacks if generic parsing fails
+                if (!content && response.data) {
+                    if (ep.name === 'Deepseek' && response.data.data?.data?.data) {
+                        content = response.data.data.data.data.answer?.data?.response || response.data.data.data.data.response;
+                    } else if (ep.name === 'GPT OSS 120B' && response.data.data?.data) {
+                        content = response.data.data.data.answer;
+                    }
+                }
+
+                if (content && typeof content === 'string' && content.trim()) {
+                    responses.push(`${ep.name} Output:\n${content.trim()}`);
                     console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(` ${ep.name} Success! Response length: `) + chalk.yellow(content?.length));
                 } else {
-                    console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(` ${ep.name} returned unexpected response format`));
-               
+                    console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(` ${ep.name} returned unexpected or empty response content`));
+
                     try {
                         console.error(chalk.gray('  - Raw response: ') + chalk.yellow(JSON.stringify(response.data, null, 2)));
                     } catch (e) {
@@ -117,30 +167,30 @@ Image URL: ${imageUrl}` : '';
             } catch (error) {
                 console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(` Error calling ${ep.name} API: `) + chalk.yellow(error.message));
                 if (error.response) {
-                  
+
                     try {
                         console.error(chalk.red(`${ep.name} API response data: `) + chalk.yellow(JSON.stringify(error.response.data, null, 2)));
                         console.error(chalk.red(`${ep.name} API status: `) + chalk.yellow(error.response.status));
-                        
-                      
+
+
                         if (error.response.status === 429) {
                             console.error(chalk.red(`${ep.name} API returned rate limit error (429), continuing to next API...`));
-                          
+
                             continue;
                         }
                     } catch (e) {
                         console.error(chalk.red(`${ep.name} API response data: `) + chalk.yellow('Could not stringify response data due to circular references'));
                         console.error(chalk.red(`${ep.name} API status: `) + chalk.yellow(error.response.status));
-                        
-                       
+
+
                         if (error.response && error.response.status === 429) {
                             console.error(chalk.red(`${ep.name} API returned rate limit error (429), continuing to next API...`));
-                           
+
                             continue;
                         }
                     }
                 }
-                
+
                 responses.push(`${ep.name} Output: API call failed, unable to process request`);
             }
         }
@@ -164,7 +214,8 @@ Please provide a comprehensive, helpful response that addresses the user's query
         const grokUrl = 'https://syntexcore.onrender.com/api/v1/grok-3-mini';
         console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Sending synthesis request to Grok-3 (Full URL):'));
         console.log(chalk.gray('  - URL: ') + chalk.cyan(grokUrl));
-        
+
+        if (onThinking) onThinking('Sundorjo AI is finalizing your clinical assessment. This might take a moment...');
         let grokResponse;
         try {
             grokResponse = await axios.post(grokUrl, {
@@ -174,16 +225,16 @@ Please provide a comprehensive, helpful response that addresses the user's query
         } catch (grokError) {
             console.error(chalk.red('Grok-3 API call failed:'), grokError.message);
             if (grokError.response) {
-          
+
                 try {
                     console.error(chalk.red('Grok-3 API response data:'), JSON.stringify(grokError.response.data, null, 2));
                     console.error(chalk.red('Grok-3 API status:'), grokError.response.status);
-                    
-              
+
+
                     if (grokError.response.status === 429) {
                         console.error(chalk.red('Grok-3 API returned rate limit error (429), using first available response...'));
-                       
-                        
+
+
                         return {
                             success: true,
                             result: responses[0].split('\n').slice(1).join('\n')
@@ -192,11 +243,11 @@ Please provide a comprehensive, helpful response that addresses the user's query
                 } catch (e) {
                     console.error(chalk.red('Grok-3 API response data:'), 'Could not stringify response data due to circular references');
                     console.error(chalk.red('Grok-3 API status:'), grokError.response.status);
-                    
-                  
+
+
                     if (grokError.response && grokError.response.status === 429) {
                         console.error(chalk.red('Grok-3 API returned rate limit error (429), using first available response...'));
-                   
+
                         return {
                             success: true,
                             result: responses[0].split('\n').slice(1).join('\n')
@@ -204,13 +255,13 @@ Please provide a comprehensive, helpful response that addresses the user's query
                     }
                 }
             }
-  
-            
+
+
             throw grokError;
         }
 
         console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Grok-3 Raw Response:'));
-     
+
         try {
             console.log(chalk.gray('  - Data: ') + chalk.white(JSON.stringify(grokResponse.data, null, 2)));
         } catch (e) {
@@ -223,7 +274,7 @@ Please provide a comprehensive, helpful response that addresses the user's query
                 result: grokResponse.data.data.data.answer
             };
         }
-        
+
         console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Grok-3 synthesis failed or returned non-success status:'));
 
         try {
@@ -231,7 +282,7 @@ Please provide a comprehensive, helpful response that addresses the user's query
         } catch (e) {
             console.error(chalk.gray('  - Data: ') + chalk.yellow('Could not stringify response data due to circular references'));
         }
-        
+
         return {
             success: true,
             result: responses[0].split('\n').slice(1).join('\n')
@@ -241,7 +292,7 @@ Please provide a comprehensive, helpful response that addresses the user's query
         console.error(chalk.red('Error: ') + chalk.yellow(error.message));
         console.error(chalk.red('Stack: ') + chalk.gray(error.stack));
         if (error.response) {
-    
+
             try {
                 console.error(chalk.red('Response Data: ') + chalk.white(JSON.stringify(error.response.data, null, 2)));
             } catch (e) {

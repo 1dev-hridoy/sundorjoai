@@ -15,7 +15,7 @@ exports.redirectChat = async (req, res) => {
 exports.renderChat = async (req, res) => {
     try {
         const { chatId } = req.params;
-       
+
         const userId = req.auth.userId;
 
         // Find or create chat
@@ -35,12 +35,12 @@ exports.renderChat = async (req, res) => {
             success: true,
             chatId: chat.chatId,
             messages: chat.messages,
-            user: { id: userId } 
+            user: { id: userId }
         });
     } catch (error) {
         console.error('Chat route error:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: 'Failed to load chat',
             chatId: req.params.chatId
         });
@@ -80,15 +80,15 @@ exports.getAllChats = async (req, res) => {
             createdAt: chat.createdAt ? new Date(chat.createdAt).toISOString() : new Date().toISOString()
         }));
 
-        res.json({ 
-            success: true, 
-            sessions 
+        res.json({
+            success: true,
+            sessions
         });
     } catch (error) {
         console.error('Get all chats error:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to load chat sessions' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load chat sessions'
         });
     }
 };
@@ -97,8 +97,8 @@ exports.getAllChats = async (req, res) => {
 exports.deleteChat = async (req, res) => {
     try {
         const { chatId } = req.params;
-    
-        
+
+
 
 
         const userId = req.auth.userId;
@@ -107,28 +107,28 @@ exports.deleteChat = async (req, res) => {
         const result = await Chat.findOneAndDelete({ chatId, userId });
 
         if (!result) {
-            return res.status(404).json({ 
-                success: false, 
-                error: 'Chat not found or you do not have permission to delete it' 
+            return res.status(404).json({
+                success: false,
+                error: 'Chat not found or you do not have permission to delete it'
             });
         }
 
-        res.json({ 
-            success: true, 
-            message: 'Chat deleted successfully' 
+        res.json({
+            success: true,
+            message: 'Chat deleted successfully'
         });
     } catch (error) {
         console.error('Delete chat error:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to delete chat' 
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete chat'
         });
     }
 };
 
 exports.handleChatRequest = async (req, res) => {
     let chatId = req.params.chatId;
-  
+
     let userId = req.auth.userId;
     const userText = req.body.text || '';
     const imageFile = req.file;
@@ -184,9 +184,19 @@ exports.handleChatRequest = async (req, res) => {
 
         const conversationHistory = chat.getConversationHistory().slice(-16, -1);
 
-        const thinkingUpdates = [];
+        // SSE Setup
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const sendEvent = (type, data) => {
+            res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+        };
+
         const onThinking = (message) => {
-            thinkingUpdates.push(message);
+            console.log(chalk.blue(`[SSE Status] `) + chalk.cyan(message));
+            sendEvent('status', { message });
         };
 
         // Generate AI response
@@ -202,12 +212,11 @@ exports.handleChatRequest = async (req, res) => {
             conversationHistory,
             onThinking,
             chatId,
-            chat.contextSummary || '' 
+            chat.contextSummary || ''
         );
 
         console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' AI API Response received:'));
         console.log(chalk.gray('  - Success: ') + chalk[responseData.success ? 'green' : 'red'](responseData.success));
-        console.log(chalk.gray('  - Result Preview: ') + chalk.white(responseData.result?.substring(0, 200) + '...'));
 
         await chat.addMessage('assistant', responseData.result);
 
@@ -217,12 +226,8 @@ exports.handleChatRequest = async (req, res) => {
             await chat.save();
         }
 
-        console.log(`[${new Date().toISOString()}] Sending successful response to client for chatId: ${chatId}`);
-        res.json({
-            success: true,
-            result: responseData.result,
-            thinking: thinkingUpdates
-        });
+        sendEvent('result', { success: true, result: responseData.result });
+        res.end();
 
         // Background Task: Update Context Summary
         (async () => {
@@ -279,6 +284,12 @@ exports.handleChatRequest = async (req, res) => {
             userMessage = 'The image format or message content could not be processed. Please try a different image.';
         } else if (error.message.includes('All AI models failed')) {
             userMessage = 'Connection to intelligence models failed. Please try again.';
+        }
+
+        if (res.headersSent) {
+            console.log(chalk.red('SSE Stream Error: ') + chalk.yellow(userMessage));
+            sendEvent('error', { success: false, error: userMessage, details: error.message });
+            return res.end();
         }
 
         res.status(statusCode).json({

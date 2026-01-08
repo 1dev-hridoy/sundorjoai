@@ -34,22 +34,23 @@ export default function Chat() {
     // State for messages
     const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
     const [isTyping, setIsTyping] = useState(false);
+    const [thinkingStatus, setThinkingStatus] = useState<string | null>(null);
 
     // Check authentication
     const { user, isLoaded: isUserLoaded } = useUser();
     const isLoading = !isUserLoaded;
-    const needsName = user && !user.firstName && !user.lastName; 
-    
+    const needsName = user && !user.firstName && !user.lastName;
 
-    
+
+
     const [initialPromptProcessed, setInitialPromptProcessed] = useState(false);
 
-  
+
     const initialLoadRef = useRef(false);
     const sessionLoadRef = useRef(false);
 
 
-    
+
     const handleNewChat = async (shouldNavigate = true): Promise<string> => {
 
         const newSessionId = generateId();
@@ -60,11 +61,11 @@ export default function Chat() {
             createdAt: new Date().toISOString()
         };
 
-      
+
         setSessions(prev => [newSession, ...prev]);
         setCurrentSessionId(newSessionId);
 
-     
+
         const initialMessages: Message[] = [{
             id: generateId(),
             role: 'ai',
@@ -84,12 +85,12 @@ export default function Chat() {
         return newSessionId;
     };
 
- 
+
     const handleSendMessage = async (content: string, file?: File, explicitSessionId?: string) => {
 
         const targetSessionId = explicitSessionId || currentSessionId;
 
-      
+
         if (!targetSessionId) {
             console.warn("Attempted to send message without a session ID");
             return;
@@ -123,13 +124,15 @@ export default function Chat() {
         }));
 
         setIsTyping(true);
+        setThinkingStatus("Initializing...");
 
         try {
-            // Call AI via Backend
+            // Call AI via Backend with status callback
             const aiResponseText = await SyntexService.generateResponse(
                 content,
                 file || null,
-                targetSessionId
+                targetSessionId,
+                (status) => setThinkingStatus(status)
             );
 
             const aiResponse: Message = {
@@ -153,8 +156,8 @@ export default function Chat() {
                 } : s));
             }
 
-    
-            
+
+
             if (!sessions.some(s => s.id === targetSessionId)) {
                 const newSession: ChatSession = {
                     id: targetSessionId,
@@ -169,14 +172,15 @@ export default function Chat() {
             toast.error("Failed to get response");
         } finally {
             setIsTyping(false);
+            setThinkingStatus(null);
         }
     };
 
 
     useEffect(() => {
         if (!isLoading && !user) {
-     
-            
+
+
         }
     }, [isLoading, user]);
 
@@ -190,12 +194,12 @@ export default function Chat() {
 
     useEffect(() => {
         if (!user || sessionLoadRef.current) return;
-        
+
         sessionLoadRef.current = true;
 
         const loadChatSessions = async () => {
             try {
-         
+
                 const chatSessions = await SyntexService.getAllChats();
                 setSessions(chatSessions);
 
@@ -206,9 +210,9 @@ export default function Chat() {
                     // No ID in URL, no prompt -> Load first available
                     navigate(`/chat/${chatSessions[0].id}`, { replace: true });
                 } else if (!initialPrompt && chatSessions.length === 0) {
-      
-                    
-                    
+
+
+
 
 
                     const newId = await handleNewChat(false);
@@ -216,11 +220,11 @@ export default function Chat() {
                 }
             } catch (error) {
                 console.error("Failed to load chat sessions:", error);
-               
+
                 const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
-                const isRateLimitError = axiosError.response?.status === 429 || 
+                const isRateLimitError = axiosError.response?.status === 429 ||
                     (axiosError.response?.data?.error && axiosError.response.data.error.includes('Too many requests'));
-                
+
                 if (!initialPrompt && !isRateLimitError) {
                     const newId = await handleNewChat(false);
                     navigate(`/chat/${newId}`, { replace: true });
@@ -241,13 +245,13 @@ export default function Chat() {
 
         const loadChatMessages = async () => {
             try {
-             
-                
+
+
                 if (!messagesMap[chatId]) {
                     const chatMessages = await SyntexService.getChatMessages(chatId);
-                    
-                 
-                    
+
+
+
 
                     const formattedMessages: Message[] = chatMessages.map((msg: { id?: string; role?: 'user' | 'ai'; content?: string; message?: string; timestamp?: string; imageUrl?: string }) => ({
                         id: msg.id || generateId(),
@@ -264,7 +268,7 @@ export default function Chat() {
                 }
             } catch (error) {
                 console.error(`Failed to load messages for chat ${chatId}:`, error);
-            
+
                 setMessagesMap(prev => ({
                     ...prev,
                     [chatId]: []
@@ -279,7 +283,7 @@ export default function Chat() {
     useEffect(() => {
         if (initialPrompt && !initialPromptProcessed && user && !initialLoadRef.current) {
             initialLoadRef.current = true;
-            
+
             const processInitialPrompt = async () => {
                 setInitialPromptProcessed(true);
                 // Create a new chat for this prompt
@@ -300,7 +304,7 @@ export default function Chat() {
         try {
             // Delete the chat from the backend
             await SyntexService.deleteChat(id);
-            
+
             // Remove from local state
             const updatedSessions = sessions.filter(session => session.id !== id);
             setSessions(updatedSessions);
@@ -345,7 +349,7 @@ export default function Chat() {
         // Find the index of the AI message to replace
         const messages = messagesMap[targetSessionId] || [];
         const aiMessageIndex = messages.findIndex(msg => msg.id === aiMessageId);
-        
+
         if (aiMessageIndex === -1) {
             console.warn("AI message not found for regeneration");
             return;
@@ -358,7 +362,7 @@ export default function Chat() {
             content: "Regenerating...",
             role: "ai"
         };
-        
+
         setMessagesMap(prev => ({
             ...prev,
             [targetSessionId]: updatedMessages
@@ -367,11 +371,13 @@ export default function Chat() {
         setIsTyping(true);
 
         try {
-            // Call AI via Backend
+            setThinkingStatus("Regenerating...");
+            // Call AI via Backend with status callback
             const aiResponseText = await SyntexService.generateResponse(
                 userMessage.content,
-                null, 
-                targetSessionId
+                null,
+                targetSessionId,
+                (status) => setThinkingStatus(status)
             );
 
             const newAiResponse: Message = {
@@ -381,8 +387,8 @@ export default function Chat() {
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
-          
-            
+
+
             const finalMessages = [...updatedMessages];
             finalMessages[aiMessageIndex] = newAiResponse;
 
@@ -402,6 +408,7 @@ export default function Chat() {
             }));
         } finally {
             setIsTyping(false);
+            setThinkingStatus(null);
         }
     };
 
@@ -444,7 +451,7 @@ export default function Chat() {
             };
         });
 
-        
+
         toast.success(`Message ${rating === 'like' ? 'liked' : 'disliked'}`);
     };
 
@@ -485,7 +492,7 @@ export default function Chat() {
                         <Skeleton className="h-12 w-full rounded-full" />
                     </div>
                 </div>
-                
+
                 {/* Skeleton for chat area */}
                 <div className="flex-1 flex flex-col">
                     <div className="p-4 border-b border-gray-200">
@@ -529,6 +536,7 @@ export default function Chat() {
                 messages={currentMessages}
                 onSendMessage={handleSendMessage}
                 isTyping={isTyping}
+                thinkingStatus={thinkingStatus}
                 onOpenSidebar={() => setIsMobileSidebarOpen(true)}
                 onRegenerateMessage={handleRegenerateResponse}
                 onMessageRating={handleMessageRating}

@@ -24,6 +24,16 @@ Suggest specific drugs, active ingredients, or products to use.
 
 **IMPORTANT:** Respond ONLY in the requested Markdown format. Do NOT include any disclaimers about being an AI or not being a doctor. Provide the advice directly and confidently.`;
 
+const IMAGE_ANALYSIS_PROMPT = `You are a professional dermatological diagnostic assistant. 
+Your ONLY task is to look at the provided image (and consider user text if any) and identify the specific skin concern, condition, or problem shown.
+
+Be extremely precise. Mention:
+1. The primary skin condition identified.
+2. Key visible symptoms (color, texture, distribution).
+3. Any specific region or pattern noted.
+
+Output ONLY the identification and description of the problem. Do NOT provide any routines, treatments, drugs, or medical advice. Format your output as a concise clinical observation.`;
+
 // Helper to format conversation history for AI
 function formatHistory(history) {
     if (!history || history.length === 0) return '';
@@ -81,150 +91,67 @@ async function generateSyntexResponse(text, imageUrl = null, conversationHistory
             };
         }
 
+        let extractedProblem = null;
+
         if (imageUrl) {
             if (onThinking) {
-                onThinking('Thinking...');
-                await new Promise(r => setTimeout(r, 600));
-                onThinking('Uploading and processing image markers...');
-                await new Promise(r => setTimeout(r, 800));
-                onThinking('Analyzing visual skin patterns with Gemini...');
-                await new Promise(r => setTimeout(r, 600));
-                onThinking('Clinical cross-referencing in progress...');
+                onThinking('Sundorjo AI is processing visual markers from your image...');
+                await new Promise(r => setTimeout(r, 1000));
+                onThinking('Analyzing skin texture and identifying dermatological patterns...');
+                await new Promise(r => setTimeout(r, 900));
+                onThinking('Mapping identified concerns to clinical frameworks...');
             }
 
             try {
-                console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Calling SyntexCore Gemini 3 Flash API...'));
+                console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Step 1: Extracting skin problem from image (Gemini 3 Flash)...'));
 
                 const historyText = formatHistory(conversationHistory);
-                const contextBlock = contextSummary ? `
-
-[PERSISTENT CONTEXT SUMMARY]:
-${contextSummary}
-` : '';
-                const fullText = `${contextBlock}${historyText}User: ${text || 'Analyze this image'}`;
+                const contextBlock = contextSummary ? `\n[CONTEXT]: ${contextSummary}\n` : '';
+                const fullText = `${contextBlock}${historyText}User: ${text || 'Identify the problem in this image'}`;
 
                 const primaryResponse = await axios.post('https://syntexcore.site/api/v1/gemini-3-flash', {
                     text: fullText,
-                    systemPrompt: SYSTEM_PROMPT,
+                    systemPrompt: IMAGE_ANALYSIS_PROMPT,
                     imageUrl: imageUrl,
                     sessionId: chatId,
                     apiKey: SYNTX_API_KEY
                 }, { timeout: 60000 });
 
-                console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 3 Flash Raw Response:'));
-                console.log(chalk.gray('  - Data: ') + chalk.white(JSON.stringify(primaryResponse.data, null, 2)));
+                if (primaryResponse.data?.status === 'success' && primaryResponse.data.data?.data?.response) {
+                    extractedProblem = primaryResponse.data.data.data.response;
+                    console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Image Extraction Success! Problem identified.'));
+                } else {
+                    console.error(chalk.red('Gemini 3 Flash extraction failed, trying fallback...'));
 
-                if (primaryResponse.data && primaryResponse.data.status === 'success' && primaryResponse.data.data && primaryResponse.data.data.data && (!primaryResponse.data.data.status || primaryResponse.data.data.status === 'success')) {
-                    console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 3 Flash Success! Result length: ') + chalk.yellow(primaryResponse.data.data.data.response?.length));
-                    return {
-                        success: true,
-                        result: primaryResponse.data.data.data.response
-                    };
-                }
-
-                console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 3 Flash reported failure: '));
-                console.error(chalk.gray('  - Data: ') + chalk.yellow(JSON.stringify(primaryResponse.data, null, 2)));
-            } catch (primaryError) {
-                console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 3 Flash API Failed: '));
-                console.error(chalk.gray('  - Message: ') + chalk.yellow(primaryError.message));
-                if (primaryError.response) {
-                    console.error(chalk.red('Primary API response data:'), JSON.stringify(primaryError.response.data, null, 2));
-                    console.error(chalk.red('Primary API status:'), primaryError.response.status);
-                    console.error(chalk.red('Primary API headers:'), JSON.stringify(primaryError.response.headers, null, 2));
-                }
-
-                try {
-                    console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Falling back to SyntexCore Gemini 2.5 Pro API...'));
-
-                    const historyText = formatHistory(conversationHistory);
-                    const contextBlock = contextSummary ? `
-
-[PERSISTENT CONTEXT SUMMARY]:
-${contextSummary}
-` : '';
-                    const fullText = `${contextBlock}${historyText}User: ${text || 'Analyze this image'}`;
-
+                    // Fallback to Gemini 2.5 Pro
+                    console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Falling back to Gemini 2.5 Pro for extraction...'));
                     const secondaryResponse = await axios.post('https://syntexcore.onrender.com/api/v1/gemini-2-5-pro', {
                         text: fullText,
-                        systemPrompt: SYSTEM_PROMPT,
+                        systemPrompt: IMAGE_ANALYSIS_PROMPT,
                         imageUrl: imageUrl,
                         sessionId: chatId,
                         apiKey: SYNTX_API_KEY
                     }, { timeout: 60000 });
 
-                    console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 2.5 Pro Raw Response:'));
-                    console.log(chalk.gray('  - Data: ') + chalk.white(JSON.stringify(secondaryResponse.data, null, 2)));
-
-                    if (secondaryResponse.data && secondaryResponse.data.status === 'success' && secondaryResponse.data.data && secondaryResponse.data.data.data && (!secondaryResponse.data.data.status || secondaryResponse.data.data.status === 'success')) {
-                        console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 2.5 Pro Success! Result length: ') + chalk.yellow(secondaryResponse.data.data.data.response?.length));
-                        return {
-                            success: true,
-                            result: secondaryResponse.data.data.data.response
-                        };
-                    }
-                                        
-                    console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 2.5 Pro reported failure: '));
-                    console.error(chalk.gray('  - Data: ') + chalk.yellow(JSON.stringify(secondaryResponse.data, null, 2)));
-                } catch (secondaryError) {
-                    console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 2.5 Pro API Failed: '));
-                    console.error(chalk.gray('  - Message: ') + chalk.yellow(secondaryError.message));
-                    if (secondaryError.response) {
-                        console.error(chalk.red('Secondary API response data:'), JSON.stringify(secondaryError.response.data, null, 2));
-                        console.error(chalk.red('Secondary API status:'), secondaryError.response.status);
-                        console.error(chalk.red('Secondary API headers:'), JSON.stringify(secondaryError.response.headers, null, 2));
-                    }
-
-                    // Try backup Gemini 2.5 Flash API
-                    try {
-                        console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Falling back to SyntexCore Gemini 2.5 Flash API (backup)...'));
-
-                        const historyText = formatHistory(conversationHistory);
-                        const contextBlock = contextSummary ? `
-
-[PERSISTENT CONTEXT SUMMARY]:
-${contextSummary}
-` : '';
-                        const backupText = `${SYSTEM_PROMPT}\n\n${contextBlock}${historyText}User: ${text || 'Analyze this image'}`;
-
-                        const backupResponse = await axios.post('https://syntexcore.onrender.com/api/v1/gemini-2.5-flash', {
-                            prompt: backupText,
-                            imageUrl: imageUrl,
-                            apiKey: SYNTX_API_KEY
-                        }, { timeout: 60000 });
-
-                        console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 2.5 Flash Raw Response:'));
-                        console.log(chalk.gray('  - Data: ') + chalk.white(JSON.stringify(backupResponse.data, null, 2)));
-
-                        if (backupResponse.data && backupResponse.data.status === 'success' && backupResponse.data.data) {
-                            console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Gemini 2.5 Flash Success! Result length: ') + chalk.yellow(backupResponse.data.data?.length));
-                            return {
-                                success: true,
-                                result: backupResponse.data.data
-                            };
-                        }
-
-                        console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 2.5 Flash reported failure: '));
-                        console.error(chalk.gray('  - Data: ') + chalk.yellow(JSON.stringify(backupResponse.data, null, 2)));
-                    } catch (backupError) {
-                        console.error(chalk.blue(`[${new Date().toISOString()}]`) + chalk.red(' Gemini 2.5 Flash API Failed: '));
-                        console.error(chalk.gray('  - Message: ') + chalk.yellow(backupError.message));
-                        if (backupError.response) {
-                            console.error(chalk.red('Backup API response data:'), JSON.stringify(backupError.response.data, null, 2));
-                            console.error(chalk.red('Backup API status:'), backupError.response.status);
-                            console.error(chalk.red('Backup API headers:'), JSON.stringify(backupError.response.headers, null, 2));
-                        }
+                    if (secondaryResponse.data?.status === 'success' && secondaryResponse.data.data?.data?.response) {
+                        extractedProblem = secondaryResponse.data.data.data.response;
+                        console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.green(' Image Extraction (Fallback) Success!'));
                     }
                 }
+            } catch (error) {
+                console.error(chalk.red('Image extraction process failed:'), error.message);
             }
 
-            if (!text || text.trim().length < 5) {
-                throw new Error('Image analysis failed and no text provided for fallback processing');
-            }
-
-            console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' All image APIs failed, falling back to multi-model text synthesis...'));
+            if (onThinking) onThinking('Synthesizing expert-level analysis with multi-model cross-verification...');
         }
 
-        return await processTextOnlyRequest(text, imageUrl, conversationHistory, onThinking, chatId, contextSummary);
+        // Pass any extracted problem or original text to the text-only processor for the full solution
+        const synthesisQuery = extractedProblem
+            ? `IMAGE ANALYSIS RESULT: ${extractedProblem}\n\nUSER ORIGINAL QUERY: ${text || 'Please provide a routine for this.'}`
+            : text;
+
+        console.log(chalk.blue(`[${new Date().toISOString()}]`) + chalk.yellow(' Step 2: Generating full dermatological solution...'));
+        return await processTextOnlyRequest(synthesisQuery, imageUrl, conversationHistory, onThinking, chatId, contextSummary);
     } catch (error) {
         console.error(chalk.red('--- SYNTAXCORE API ERROR START ---'));
         console.error(chalk.red('Error: ') + chalk.yellow(error.message));

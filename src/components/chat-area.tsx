@@ -26,6 +26,7 @@ interface ChatAreaProps {
     messages: Message[];
     onSendMessage: (content: string, file?: File) => void;
     isTyping?: boolean;
+    thinkingStatus?: string | null;
     onOpenSidebar?: () => void;
     onRegenerateMessage?: (aiMessageId: string, userMessage: Message, explicitSessionId?: string) => void;
     onMessageRating?: (messageId: string, rating: 'like' | 'dislike') => void;
@@ -34,7 +35,7 @@ interface ChatAreaProps {
     userEmail?: string;
 }
 
-export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSidebar, onRegenerateMessage, onMessageRating, userAvatarStyle, userUsername, userEmail }: ChatAreaProps) {
+export default function ChatArea({ messages, onSendMessage, isTyping, thinkingStatus, onOpenSidebar, onRegenerateMessage, onMessageRating, userAvatarStyle, userUsername, userEmail }: ChatAreaProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [input, setInput] = useState("");
     const [dragActive, setDragActive] = useState(false);
@@ -104,7 +105,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
             return;
         }
 
-     
+
         if (previewFile) {
             URL.revokeObjectURL(previewFile.previewUrl);
         }
@@ -113,7 +114,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
         setPreviewFile({ file, previewUrl });
     }, [previewFile]);
 
-  
+
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -134,7 +135,7 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
         }
     }, [handleFileSelect]);
 
-  
+
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             handleFileSelect(e.target.files[0]);
@@ -328,8 +329,8 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className={`h-7 w-7 rounded-lg ${msg.isLiked
-                                                                        ? 'text-green-500 bg-green-100 hover:bg-green-100'
-                                                                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                                                                    ? 'text-green-500 bg-green-100 hover:bg-green-100'
+                                                                    : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                                 onClick={() => onMessageRating && onMessageRating(msg.id, 'like')}
                                                             >
@@ -345,8 +346,8 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className={`h-7 w-7 rounded-lg ${msg.isDisliked
-                                                                        ? 'text-red-500 bg-red-100 hover:bg-red-100'
-                                                                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                                                                    ? 'text-red-500 bg-red-100 hover:bg-red-100'
+                                                                    : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                                 onClick={() => onMessageRating && onMessageRating(msg.id, 'dislike')}
                                                             >
@@ -371,10 +372,25 @@ export default function ChatArea({ messages, onSendMessage, isTyping, onOpenSide
                                             <AvatarImage src={appLogo} alt="AI" />
                                             <AvatarFallback><Sparkles className="size-4" /></AvatarFallback>
                                         </Avatar>
-                                        <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1 shadow-sm">
-                                            <div className="size-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                            <div className="size-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                            <div className="size-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1 shadow-sm w-fit">
+                                                <div className="size-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                                <div className="size-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                                <div className="size-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                            </div>
+                                            <AnimatePresence mode="wait">
+                                                <motion.p
+                                                    key={thinkingStatus || "Thinking..."}
+                                                    initial={{ opacity: 0, x: 5 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -5 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="text-[10px] text-gray-500 font-medium ml-1 flex items-center gap-1.5"
+                                                >
+                                                    <Sparkles className="size-3 text-blue-500 animate-pulse" />
+                                                    {thinkingStatus || "Sundorjo AI is preparing your analysis..."}
+                                                </motion.p>
+                                            </AnimatePresence>
                                         </div>
                                     </motion.div>
                                 )}

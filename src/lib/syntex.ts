@@ -89,32 +89,73 @@ export const SyntexService = {
         return URL.createObjectURL(file);
     },
 
-    generateResponse: async (text: string, file: File | null, sessionId: string): Promise<string> => {
+    generateResponse: async (text: string, file: File | null, sessionId: string, onStatus?: (message: string) => void): Promise<string> => {
         const formData = new FormData();
         if (text) formData.append('text', text);
         if (file) formData.append('image', file);
 
         try {
+            const endpoint = `${API_URL}/api/chat/${sessionId}`;
 
-            const endpoint = `/api/chat/${sessionId}`;
+            // Get Clerk token
+            const token = await ((window as any).Clerk?.session?.getToken() || null);
 
-            const response = await api.post(endpoint, formData, {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                body: formData,
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 }
             });
 
-            if (response.data && response.data.success) {
-                return response.data.result;
-            } else {
-                throw new Error(response.data.error || "AI failed to respond");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
+
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error("Response body is null");
+
+            const decoder = new TextDecoder();
+            let resultText = "";
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split('\n\n');
+                buffer = parts.pop() || "";
+
+                for (const part of parts) {
+                    const line = part.trim();
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'status' && onStatus) {
+                                onStatus(data.message);
+                            } else if (data.type === 'result') {
+                                resultText = data.result;
+                            } else if (data.type === 'error') {
+                                throw new Error(data.error || "Streaming error occurred");
+                            }
+                        } catch (e) {
+                            console.error("Error parsing SSE chunk:", e, line);
+                        }
+                    }
+                }
+            }
+
+            if (!resultText) {
+                throw new Error("AI failed to respond with a result");
+            }
+
+            return resultText;
 
         } catch (error) {
             console.error("AI Generation Error:", error);
-            const axiosError = error as { response?: { data?: { error?: string } } };
-            const msg = axiosError.response?.data?.error || (error as Error).message || "Connection failed";
-            // Allow 400/500 errors to show up
+            const msg = (error as Error).message || "Connection failed";
             return `Error: ${msg}`;
         }
     },
